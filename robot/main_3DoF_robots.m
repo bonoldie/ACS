@@ -1,41 +1,95 @@
 close all;
-clear all;
+% clear all;
 clc;
 
-% robot = importrobot('iiwa14.urdf');
+addpath(genpath("."));
 
-robot = importrobot('RPR_yyz ENRICO BONOLDI.urdf');
+% loads robot from the urdf file
+robot = importrobot('RPR_yyz.urdf');
+robot.DataFormat = 'col'; 
+showdetails(robot)
 
-% robot.DataFormat = 'column';
-% config = [0.1, pi/3, -0.15]';
+% symbols init
+syms q1 dq1 ddq1 q2 dq2 ddq2 q3 dq3 ddq3 real;
 
-showdetails(robot);
+% joint variables 
+q = [q1 q2 q3]';
+dq = [dq1 dq2 dq3]';
+ddq = [ddq1 ddq2 ddq3]';
 
-figure(1); 
-config = homeConfiguration(robot);
+qTypes = {'Revolute', 'Prismatic', 'Revolute'};
 
-config(1).JointPosition = 0;
-config(2).JointPosition = 0;
-config(3).JointPosition = 0;
+% robot machanical properties
 
-show(robot,config);
-title('Robotics toolbox');
+% base to first joint, first to second joint and so on
+delta_b_0 = 0.15;
+delta_0_1 = 0.4;
+delta_1_2 = 0.3;
+delta_2_ee = 0.16;
 
-xlim([-0.5 0.8]);
-ylim([-0.5 0.5]);
-zlim([0 0.8]);
+DH_table = [
+%  a           alpha   d               theta
+   0           pi/2    delta_b_0       0
+   delta_0_1   0       0               q1
+   0           -pi/2   delta_1_2 + q2  0
+   delta_2_ee  0       0               q3
+];
 
-eePose = getTransform(robot,config,"ee");
+% to adjust the EE to match the robotics toolbox one we must rotate about
+% the y axis by pi/2 rad
+rotateEE = [ eul2rotm([0 pi/2 0],"ZYZ") [0; 0; 0]; [0 0 0 1]];
 
-% EE orientation, euler angles in the ZYX axis order
-eeOrientation = rotm2eul(eePose(1:3,1:3));
+kinematics = loadKinematics(DH_table, rotateEE, q, qTypes);
 
-eePosition = eePose(1:3, 4);
+test_joint_values = [-pi/3 -0.11 pi/8]';
 
-disp('EE orientation');
-disp(eeOrientation);
+evaluatedKinematics = evaluateKinematics(kinematics, q, test_joint_values);
 
-disp('EE position');
-disp(eePosition);
+plot = 0;
+if plot
+    % plotting the robot from the robotics toolbox and the transforms obtained
+    % via the kinematics evaluation
+    
+    figure(1);
+    subplot(131);
+    show(robot, test_joint_values');
+    subplot(133);
+    hold on;
+    framesToPlot = [eye(4), evaluatedKinematics.T_cumulative];
+    for i=1:size(framesToPlot,2)
+       plotTransforms(framesToPlot{i}(1:3,4)',rotm2quat(framesToPlot{i}(1:3, 1:3)), FrameSize=0.1);
+    
+       if i > 1
+            line([framesToPlot{i-1}(1,4);framesToPlot{i}(1,4)],[framesToPlot{i-1}(2,4);framesToPlot{i}(2,4)],[framesToPlot{i-1}(3,4);framesToPlot{i}(3,4)]);
+       end
+    end
+end
+
+% pose from the direct kinematics
+testPose = evaluatedKinematics.T_cumulative{end}(1:3, 4);
+
+% manual inverse kinematics
+manual_ik_q = invKinematics(testPose);
+
+% robotics toolbox inverse kinematics
+ik = inverseKinematics("RigidBodyTree",robot);
+
+ik_q_values = ik('ee',evaluatedKinematics.T_cumulative{end}, [0.1 0.1 0.1 0.1 0.1 0.1], robot.homeConfiguration);
+
+plot = 1;
+if plot
+    % plotting the robot from the robotics toolbox and the transforms obtained
+    % via the kinematics evaluation
+    
+    figure();
+    subplot(131);
+    title('Robotics toolbox IK');
+    show(robot, ik_q_values);
+    subplot(133);
+    title('Manual IK');
+    show(robot, manual_ik_q);
+
+end
 
 
+kineticEnergy = 0.5*'

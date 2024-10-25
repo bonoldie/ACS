@@ -1,4 +1,4 @@
-function [inertia] = prism_inertia(mass, a,b,c)
+function [inertia] = prismInertia(mass, a,b,c)
 %PRISM_INERTIA Summary of this function goes here
 %   Detailed explanation goes here
 inertia = [

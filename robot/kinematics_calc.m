@@ -6,7 +6,7 @@ clc;
 run('utils.m');
 
 % loads robot from URDF
-robot = importrobot('RPR_yyz ENRICO BONOLDI.urdf');
+robot = importrobot('RPR_yyz.urdf');
 
 % robot links length
 % base to first joint, first to second joint and so on
@@ -223,7 +223,7 @@ Ja = [
 
 Ja = simplify(Ja, 'seconds', 10);
 
-q1_test = 0;
+q1_test = ;
 q2_test = 0;
 q3_test = 0;
 

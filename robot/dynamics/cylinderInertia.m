@@ -1,4 +1,4 @@
-function [inertia] = cylinder_inertia(mass, a, b, h)
+function [inertia] = cylinderInertia(mass, a, b, h)
 %CYLINDER_INERTIA Summary of this function goes here
 %   Detailed explanation goes here
 inertia = [

@@ -1,0 +1,74 @@
+close all;
+clear all;
+clc;
+
+addpath(genpath("."));
+
+% loads robot from the urdf file
+robot = importrobot('RPR_yyz.urdf');
+robot.DataFormat = 'col'; 
+showdetails(robot)
+
+% symbols init
+syms q1 q2 q3  real;
+
+% joint variables 
+q = [q1 q2 q3];
+
+dq = []
+
+% robot links length
+% base to first joint, first to second joint and so on
+delta_b = 0.15;
+delta_1 = 0.4;
+delta_2 = 0.3;
+delta_3 = 0.16;
+
+jointTypes = {'Rev', 'Prism', 'Rev'};
+
+DH_table = [
+%  a         alpha   d              theta
+   0         pi/2    delta_b        0
+   delta_1   0       0              q1
+   0         -pi/2   delta_2 + q2   0
+   delta_3   0       0              q3
+];
+
+% to adjust the EE to match the robotics toolbox one we must rotate about
+% the y axis by pi/2 rad
+rotateEE = [ eul2rotm([0 pi/2 0],"ZYZ") [0; 0; 0]; [0 0 0 1]];
+
+kinematics = loadKinematics(DH_table, rotateEE, [q1 q2 q3], jointTypes);
+
+test_joint_values = [pi/5 -0.22 -pi/8];
+
+config = homeConfiguration(robot);
+config(1).JointPosition = test_joint_values(1);
+config(2).JointPosition = test_joint_values(2);
+config(3).JointPosition = test_joint_values(3);
+
+evaluatedKinematics = evaluateKinematics(kinematics, [q1 q2 q3], test_joint_values);
+
+% plotting the robot from the robotics toolbox and the transforms obtained
+% via the kinematics evaluation
+
+figure(1);
+
+subplot(131);
+show(robot, config);
+
+subplot(133);
+hold on;
+
+framesToPlot = [eye(4), evaluatedKinematics.T_b_i];
+
+for i=1:size(framesToPlot,2)
+   plotTransforms(framesToPlot{i}(1:3,4)',rotm2quat(framesToPlot{i}(1:3, 1:3)), FrameSize=0.1);
+
+   if i > 1
+        line([framesToPlot{i-1}(1,4);framesToPlot{i}(1,4)],[framesToPlot{i-1}(2,4);framesToPlot{i}(2,4)],[framesToPlot{i-1}(3,4);framesToPlot{i}(3,4)]);
+   end
+end
+
+evaluatedKinematics.Jg
+
