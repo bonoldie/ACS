@@ -14,9 +14,6 @@ syms q1 q2 q3 real;
 
 % joint variables 
 
-
-
-
 q = [q1 q2 q3]';
 
 % base to first joint, first to second joint and so on
@@ -54,7 +51,7 @@ p_CoM = {
     applyTransform(T_b_i{4},[-delta_2_3/2;0;0]);
 };
 
-test_q_values = [-pi/5 -0.18 pi/3]';
+test_q_values = [pi/5 -0.18 pi/3]';
 evaluatedKinematics = evaluateKinematics(kinematics, test_q_values);
 
 plot = 1;
@@ -157,7 +154,7 @@ Jg_b_3_tb = geometricJacobian(robot, test_q_values, 'Link4');
 
 Tcumulate = cumulateTransforms(kinematics.T);
 
-test_dq_values = [0.5;0.5;0.5];
+test_dq_values = [1;2;3];
 
 m = [1;1;1];
 
@@ -241,7 +238,7 @@ ddq_t = [ddq1_t;ddq2_t;ddq3_t];
 % ddq_t = diff(dq_t, t);
 
 B_q = subs(B, q, q_t);
-test_ddq_values = [0.5;0.5;0.5];
+test_ddq_values = [0.3;0.05;0.1];
 
 eq_motion = B_q * ddq_t;
 eq_motion = eq_motion + subs(diff(B_q, t), diff(q_t, t), dq_t)*dq_t;

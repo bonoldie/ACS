@@ -14,7 +14,7 @@ for j=1:linkNumber
     
     if strcmp(kinematics.joints.types{j}, 'Revolute')
         out(:, j) = [
-            cross(z_j_minus_1, p_li - p_j_minus_1);
+            diff(p_li, kinematics.joints.symbols(j)); % cross(z_j_minus_1, p_li - p_j_minus_1);
             z_j_minus_1
         ];
     else
