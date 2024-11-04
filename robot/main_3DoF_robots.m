@@ -13,6 +13,10 @@ showdetails(robot)
 syms q1 dq1 ddq1 q2 dq2 ddq2 q3 dq3 ddq3 real;
 
 % joint variables 
+
+
+
+
 q = [q1 q2 q3]';
 dq = [dq1 dq2 dq3]';
 ddq = [ddq1 ddq2 ddq3]';
