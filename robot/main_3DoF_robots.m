@@ -13,6 +13,10 @@ showdetails(robot);
 syms q1 q2 q3 real;
 
 % joint variables 
+
+
+
+
 q = [q1 q2 q3]';
 
 % base to first joint, first to second joint and so on
