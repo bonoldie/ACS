@@ -5,18 +5,17 @@ clc;
 addpath(genpath("."));
 
 % loads robot from the urdf file
-robot = importrobot('RPR_yyz.urdf');
+robot = importrobot('RPR_yyz_renamed.urdf');
+% robot configurations are now row vectors
 robot.DataFormat = 'col'; 
 showdetails(robot);
 
-% symbols init
+% symbols init for joint variables
 syms q1 q2 q3 real;
-syms q1_dot q2_dot q3_dot real;
-
-% joint variables 
+syms dq1 dq2 dq3 real;
 
 q = [q1;q2;q3];
-q_dot = [q1_dot;q2_dot;q3_dot];
+dq = [dq1;dq2;dq3];
 
 % base to first joint, first to second joint and so on
 delta_b_0 = 0.15;
@@ -40,19 +39,32 @@ rotateEE = [ eul2rotm([0 pi/2 0],"ZYZ") [0; 0; 0]; [0 0 0 1] ];
 T_dh = DHToTransforms(DH_table);
 
 transforms = [T_dh, rotateEE];
-qTypes = {'Revolute', 'Prismatic', 'Revolute'};
-frameNames = {'b', '0', '1', '2', '3', 'ee'};
+linksName = {    'Base Link',   'Link1',      'Link2',      'Link3',     'EE'       };
+jointsType = {     'Fixed',    'Revolute',   'Prismatic',  'Revolute',  'Fixed'    };
+framesName = {'b',          '0',         '1',           '2',         '3',      'ee'};
 
-kinematics = loadKinematics(transforms, frameNames, q, qTypes);
 % rinominare T_b_i to T_i_b
-T_b_i = cumulateTransforms(kinematics.T);
+T_b_i = cumulateTransforms(T_dh);
 
-p_CoM = {
-    applyTransform(T_b_i{2},[-delta_0_1/2;0;0]);
-    applyTransform(T_b_i{3},[0;delta_1_2/2;0]);
-    applyTransform(T_b_i{4},[-delta_2_3/2;0;0]);
+CoM = {
+    0;
+    applyTransform(T_b_i{2}, [-delta_0_1/2;0;0]);
+    applyTransform(T_b_i{3}, [0;delta_1_2/2;0]);
+    applyTransform(T_b_i{4}, [-delta_2_3/2;0;0]);
+    0
 };
 
+m = [0; 1; 1; 1;0];
+
+I_Link1 = parallelAxis(inertiaVec2tensor(cylinderInertia(m(1),0.02, 0, delta_0_1)), m(1), [-delta_0_1/2;0;0]);
+I_Link2 = parallelAxis(inertiaVec2tensor(prismInertia(m(2),0.3, 0.03, delta_1_2)), m(2), [0;0;-delta_1_2/2]);
+I_Link3 = parallelAxis(inertiaVec2tensor(cylinderInertia(m(3),0.02, 0, delta_2_3)), m(3), [-delta_2_3/2;0;0]);
+
+MoI = {zeros(3), I_Link1, I_Link2, I_Link3, zeros(3)};
+
+myRobot = loadRobot(transforms, framesName, jointsType, linksName, m, MoI, CoM, q);
+
+%%
 test_q_values = [pi/2 -0.18 pi/4]';
 evaluatedKinematics = evaluateKinematics(kinematics, test_q_values);
 

@@ -5,15 +5,17 @@ clc;
 addpath(genpath("."));
 
 % loads robot from the urdf file
-robot = importrobot('RPR_yyz.urdf');
+robot = importrobot('RPR_yyz_renamed.urdf');
+% robot configurations are now row vectors
 robot.DataFormat = 'col'; 
 showdetails(robot);
 
-% symbols init
+% symbols init for joint variables
 syms q1 q2 q3 real;
+syms dq1 dq2 dq3 real;
 
-% joint variables 
-q = [q1 q2 q3]';
+q = [q1;q2;q3];
+dq = [dq1;dq2;dq3];
 
 % base to first joint, first to second joint and so on
 delta_b_0 = 0.15;
@@ -37,23 +39,32 @@ rotateEE = [ eul2rotm([0 pi/2 0],"ZYZ") [0; 0; 0]; [0 0 0 1] ];
 T_dh = DHToTransforms(DH_table);
 
 transforms = [T_dh, rotateEE];
-qTypes = {'Revolute', 'Prismatic', 'Revolute'};
-frameNames = {'b', '0', '1', '2', '3', 'ee'};
+linkNames = {    'Base Link',   'Link1',      'Link2',      'Link3',     'EE'       };
+jointsType = {     'Fixed',    'Revolute',   'Prismatic',  'Revolute',  'Fixed'    };
+frameNames = {'b',          '0',         '1',           '2',         '3',      'ee'};
 
-kinematics = loadKinematics(transforms, frameNames, q, qTypes);
 % rinominare T_b_i to T_i_b
-T_b_i = cumulateTransforms(kinematics.T);
+T_b_i = cumulateTransforms(T_dh);
 
-p_CoM = {
-    applyTransform(T_b_i{2},[-delta_0_1/2;0;0]);
-    applyTransform(T_b_i{3},[0;delta_1_2/2;0]);
-    applyTransform(T_b_i{4},[-delta_2_3/2;0;0]);
+CoMs = {
+    applyTransform(T_b_i{2}, [-delta_0_1/2;0;0]);
+    applyTransform(T_b_i{3}, [0;delta_1_2/2;0]);
+    applyTransform(T_b_i{4}, [-delta_2_3/2;0;0]);
 };
 
-test_q_values = [-pi/5 -0.18 pi/3]';
+m = [0; 1; 1; 1;0];
+
+I_Link1 = parallelAxis(inertiaVec2tensor(cylinderInertia(m(1),0.02, 0, delta_0_1)), m(1), [-delta_0_1/2;0;0]);
+I_Link2 = parallelAxis(inertiaVec2tensor(prismInertia(m(2),0.3, 0.03, delta_1_2)), m(2), [0;0;-delta_1_2/2]);
+I_Link3 = parallelAxis(inertiaVec2tensor(cylinderInertia(m(3),0.02, 0, delta_2_3)), m(3), [-delta_2_3/2;0;0]);
+
+
+myRobot = loadRobot(transforms, frameNames, jointsType, linkNames, inertias, CoMs, q);
+
+test_q_values = [pi/2 -0.18 pi/4]';
 evaluatedKinematics = evaluateKinematics(kinematics, test_q_values);
 
-plot = 1;
+plot = 0;
 if plot
     % plotting the robot from the robotics toolbox and the transforms obtained
     % via the kinematics evaluation
@@ -153,7 +164,9 @@ Jg_b_3_tb = geometricJacobian(robot, test_q_values, 'Link4');
 
 Tcumulate = cumulateTransforms(kinematics.T);
 
-test_dq_values = [0.5;0.5;0.5];
+test_dq_values = [0;0;0];
+
+gVec = [0;0;-9.81];
 
 m = [1;1;1];
 
@@ -200,11 +213,33 @@ B = simplify(B);
 
 solve(simplify(eig(B)) > 0, [q3], 'ReturnConditions', true);
 
+C_expanded = sym(zeros(kinematics.DOF, kinematics.DOF, kinematics.DOF));
+
+for i=1:kinematics.DOF
+    for j=1:kinematics.DOF
+        for k=1:kinematics.DOF
+            % C_expanded(i, j, k) = diff(B(i,j), q(k)) * q_dot(k) - 0.5 * diff(B(j,k), q(i)) * q_dot(k);
+            C_expanded(i,j,k) = 0.5 * (diff(B(i,j), q(k)) + diff(B(i,k), q(j)) - diff(B(j,k), q(i))) * q_dot(k);
+        end
+    end
+end
+
+C = simplify(sum(C_expanded, 3));
+
+G = sym(zeros(kinematics.DOF, kinematics.DOF));
+
+for i=1:kinematics.DOF
+    for j=1:kinematics.DOF
+       pJg = partialJg(kinematics, p_CoM, j);
+       G(i, j) = - m(j) * gVec' * pJg(1:3, i);
+    end
+end
+
+G = simplify(sum(G, 2));
+
 %  B = inertiaMatrix(kinematics, inertiaTensors);
 
 kineticEnergy = 0.5*test_dq_values'*double(subs(B,q, test_q_values))*test_dq_values;
-
-gVec = [0;0;-9.81];
 
 U = sym(0);
 
@@ -237,7 +272,10 @@ ddq_t = [ddq1_t;ddq2_t;ddq3_t];
 % ddq_t = diff(dq_t, t);
 
 B_q = subs(B, q, q_t);
-test_ddq_values = [0.5;0.5;0.5];
+C_q_q_dot = subs(C, [q; q_dot], [q_t;dq_t]);
+G_q = subs(G, q, q_t);
+
+test_ddq_values = [0;0;0];
 
 eq_motion = B_q * ddq_t;
 eq_motion = eq_motion + subs(diff(B_q, t), diff(q_t, t), dq_t)*dq_t;
@@ -252,8 +290,24 @@ eq_motion = eq_motion + [...
     diff(subs(U, q, q_t), q3_t);
 ];
 
-eq_motion = subs(eq_motion,diff(q_t, t), dq_t);
+eq_motion_diff = subs(eq_motion,diff(q_t, t), dq_t);
+tau_sol_diff = subs(eq_motion_diff, [formula(q_t);formula(dq_t);formula(ddq_t)], [test_q_values;test_dq_values; test_ddq_values]);
 
-tau = subs(eq_motion, [formula(q_t);formula(dq_t);formula(ddq_t)], [test_q_values;test_dq_values; test_ddq_values]);
+eq_motion_mat =  B_q*ddq_t + C_q_q_dot*dq_t + G_q;
+tau_sol_mat = subs(eq_motion_mat, [formula(q_t);formula(dq_t);formula(ddq_t)], [test_q_values;test_dq_values; test_ddq_values]);
 
 invDynamics = robot.inverseDynamics(test_q_values, test_dq_values, test_ddq_values);
+
+%% Newton-Euler approach
+
+w_0 = 0;
+dw_0 = 0;
+ddp_0 = [0;0;9.81]; 
+
+forwardOut = cell(1, kinematics.DOF);
+
+% forward recursion
+for i = 1:kinematics.DOF
+    T = kinematics.T{i}; 
+    
+end

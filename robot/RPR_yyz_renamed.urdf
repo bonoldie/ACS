@@ -21,12 +21,12 @@
         </visual>
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" /> <!-- center of mass -->
-            <mass value="1" />
+            <mass value="0" />
             <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
         </inertial>
     </link>
 
-    <link name = "Link2">
+    <link name = "Link1">
         <visual>
             <origin xyz="0.2 0 0" rpy= "0 1.57 0" />
             <geometry>
@@ -47,12 +47,12 @@
         </visual>
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" /> <!-- center of mass -->
-            <mass value="1" />
+            <mass value="0" />
             <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
         </inertial>
     </link>
 
-    <link name = "Link3">
+    <link name = "Link2">
         <visual>
             <origin xyz="0 0 0.15" rpy="0 0 0" />
             <geometry>
@@ -73,12 +73,12 @@
         </visual>
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="1" />
+            <mass value="0" />
             <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
         </inertial>
     </link>
 
-    <link name = "Link4">
+    <link name = "Link3">
         <visual>
             <origin xyz="0.1 0 0" rpy="0 1.57 0" />
             <geometry>
@@ -90,7 +90,7 @@
         </visual>
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="1" />
+            <mass value="0" />
             <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
         </inertial>
     </link>
@@ -99,7 +99,7 @@
 
     <joint name = "Joint1" type="revolute">
         <parent link = "base_link" />
-        <child link = "Link2" />
+        <child link = "Link1" />
         <origin xyz = "0 0 0.15" rpy="1.57 0 0"/>
         <axis xyz = "0 0 1" />
         <limit lower = "-3.14" upper = "3.14" effort = "0" velocity = "1" /> 
@@ -108,8 +108,8 @@
 
 
     <joint name = "Joint2" type="prismatic">
-        <parent link = "Link2" />
-        <child link = "Link3" />
+        <parent link = "Link1" />
+        <child link = "Link2" />
         <origin xyz = "0.4 0 0" rpy="0 0 0"/>
         <axis xyz = "0 0 1" />
         <limit lower = "-0.3" upper = "+0" effort = "0" velocity = "1"/>
@@ -118,16 +118,16 @@
 
 
     <joint name = "Joint3" type="revolute">
-        <parent link = "Link3" />
-        <child link = "Link4" />
+        <parent link = "Link2" />
+        <child link = "Link3" />
         <origin xyz = "0 0 0.3" rpy = "-1.57 0 0"/>
         <axis xyz = "0 0 1" />
         <limit lower = "-3.14" upper = "3.14" effort = "0" velocity = "1" />
         <dynamics damping="0.0" friction="0.0"/>
     </joint>
 
-    <joint name="ee_link" type="fixed">
-    	<parent link="Link4" />
+    <joint name="JointEE" type="fixed">
+    	<parent link="Link3" />
     	<child link="ee" />
         <origin xyz="0.16 0 0" rpy="0 1.57 0" />
     </joint>
