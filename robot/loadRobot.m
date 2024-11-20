@@ -18,8 +18,12 @@ roboticStructure = struct( ...
 roboticStructure.dynamics = struct( ...
     'B', calculateBMatrix(roboticStructure)...
 );
-% roboticStructure.dynamics.C = calculateCMatrix(roboticStructure);
-% roboticStructure.dynamics.G = calculateGMatrix(roboticStructure);
+
+roboticStructure.dynamics.C = calculateCMatrix(roboticStructure);
+roboticStructure.dynamics.G = calculateGMatrix(roboticStructure);
+
+roboticStructure.eq_motion = roboticStructure.dynamics.B*jointsSymbol(:,3) + roboticStructure.dynamics.C*jointsSymbol(:,2) + roboticStructure.dynamics.G;
+
 
 end
 

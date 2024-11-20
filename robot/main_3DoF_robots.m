@@ -53,7 +53,7 @@ p_CoM = {
     applyTransform(T_b_i{4},[-delta_2_3/2;0;0]);
 };
 
-test_q_values = [pi/2 -0.18 pi/4]';
+test_q_values = [-pi/5 -0.18 pi/3]';
 evaluatedKinematics = evaluateKinematics(kinematics, test_q_values);
 
 plot = 0;
