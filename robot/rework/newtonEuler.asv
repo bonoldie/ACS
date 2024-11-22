@@ -36,12 +36,13 @@ function [torques] = newtonEuler(roboticStructure, he, w0, dw0, ddp0)
         dw{i} = R'*dw_i_minus_one;
 
         if strcmp(roboticStructure.jointsType{jointsIndex(i)}, 'Revolute')
-            dw{i} = dw{i} + R' * (roboticStructure.jointsSymbol(i, 3) * z0 + cross(roboticStructure.jointsSymbol(i, 2)*w_i_minus_one, z0));
+            dw{i} = dw{i} + R' * (roboticStructure.jointsSymbol(i, 3) * z0 + cross(roboticStructure.jointsSymbol(i, 2)*w{1}, ));
         end
         
         r = roboticStructure.T_b_i{jointsIndex(i)}(1:3,4) - roboticStructure.T_b_i{jointsIndex(i)-1}(1:3,4);
         r = roboticStructure.T_b_i{jointsIndex(i)}(1:3, 1:3) * r;
 
+       
         ddp{i} = R'*ddp_i_minus_one + cross(dw{i},r) + cross(w{i}, cross(w{i}, r));
 
         if strcmp(roboticStructure.jointsType{jointsIndex(i)}, 'Prismatic')

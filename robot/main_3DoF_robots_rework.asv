@@ -95,7 +95,7 @@ velConfiguration = zeroTorqueConfiguration + [
 %   q    dq      ddq
     0,   -10.5,   0;... % 1
     0,   10.5,    0;... % 2
-    0,   5.5,    0;... % 3
+    0,   1.5,    0;... % 3
 ];
 
 accelConfiguration = zeroTorqueConfiguration + [
@@ -141,8 +141,8 @@ myRobot.frictions = {friction1, friction2, friction3};
 
 [ne_tau1] = newtonEuler(myRobot, he, [0;0;0], [0;0;0], [0;0;0]);
 
-ne_torques1 = subs(ne_tau1,[q;dq;ddq],zeroTorqueConfiguration(:));
-ne_torques2 = subs(ne_tau1,[q;dq;ddq],velConfiguration(:));
-ne_torques3 = subs(ne_tau1,[q;dq;ddq],accelConfiguration(:));
+ne_torques1 = subs(ne_tau1,[q;dq;ddq],velConfiguration(:));
+ne_torques1 = subs(ne_tau1,[q;dq;ddq],velConfiguration(:));
+ne_torques1 = subs(ne_tau1,[q;dq;ddq],accelConfiguration(:));
 
 
