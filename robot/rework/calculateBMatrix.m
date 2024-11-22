@@ -16,7 +16,6 @@ for i=1:roboticStructure.DOF
         roboticStructure.mass(jointsIndex(i)) * partialGeometricJ(1:3,:)' * partialGeometricJ(1:3,:) + ... 
         partialGeometricJ(4:6, :)' * Ri * roboticStructure.MoI{jointsIndex(i)} * Ri' * partialGeometricJ(4:6, :)...
     );
-
 end
 
 B = simplify(B);

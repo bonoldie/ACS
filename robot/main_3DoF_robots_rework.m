@@ -60,13 +60,63 @@ I_Link3 = parallelAxis(inertiaVec2tensor(cylinderInertia(m(3),0.02, 0, delta_2_3
 
 MoI = {zeros(3), I_Link1, I_Link2, I_Link3, zeros(3)};
 
-myRobot = loadRobot(transforms, framesName, jointsType, linksName, m, MoI, CoM, [q dq ddq]);
+g =  [0;0;-9.81];
 
-staticConfiguration = [
-    -pi/5, 0, 0;...
-    -0.18, 0, 0;...
-    pi/3, 0, 0;...
+% Custom robotic structure
+myRobot = loadRobot(transforms, framesName, jointsType, linksName, m, MoI, CoM, [q dq ddq], g);
+
+% Robotic systems toolbox setup
+robot.getBody('Link1').Mass = m(2);
+robot.getBody('Link2').Mass = m(3);
+robot.getBody('Link3').Mass = m(4);
+
+robot.getBody('Link1').Inertia = inertiaTensor2vec(I_Link1);
+robot.getBody('Link2').Inertia = inertiaTensor2vec(I_Link2);
+robot.getBody('Link3').Inertia = inertiaTensor2vec(I_Link3);
+
+robot.getBody('Link1').CenterOfMass = [delta_0_1/2;0;0];
+robot.getBody('Link2').CenterOfMass = [0;0;delta_1_2/2];
+robot.getBody('Link3').CenterOfMass = [delta_2_3/2;0;0];
+
+robot.Gravity = g;
+
+%% Models evaluation
+
+zeroTorqueConfiguration = [
+%   q      dq    ddq
+    pi/2,  0,    0; % 1
+    0,     0,    0; % 2
+    0,     0,    0; % 3
 ];
 
-[aa, torques] = evalRobot(myRobot, staticConfiguration);
+velConfiguration = zeroTorqueConfiguration + [
+%   q    dq      ddq
+    0,   -10.5,   0;... % 1
+    0,   10.5,    0;... % 2
+    0,   1.5,    0;... % 3
+];
 
+accelConfiguration = zeroTorqueConfiguration + [
+%   q    dq      ddq
+    0,   0       10.5;  % 1
+    0,   0       -10.5; % 2
+    0,   0       -1.5; % 3
+];
+
+if 0
+    figure();
+    show(robot, zeroTorqueConfiguration(:, 1));
+    title('Zero-Torque configuration');
+end
+
+% Inverse dynamics via the Lagrange model
+[myEvaluatedRobot1, torques1] = evalRobot(myRobot, zeroTorqueConfiguration);
+[myEvaluatedRobot2, torques2] = evalRobot(myRobot, velConfiguration);
+[myEvaluatedRobot3, torques3] = evalRobot(myRobot, accelConfiguration);
+
+% Robotics toolbox inverse dynamics
+toolbox_toques1 = inverseDynamics(robot, zeroTorqueConfiguration(:, 1),zeroTorqueConfiguration(:, 2),zeroTorqueConfiguration(:, 3));
+toolbox_toques2 = inverseDynamics(robot, velConfiguration(:, 1),velConfiguration(:, 2),velConfiguration(:, 3));
+toolbox_toques3 = inverseDynamics(robot, accelConfiguration(:, 1),accelConfiguration(:, 2),accelConfiguration(:, 3));
+
+% Newton-Euler inverse dynamics solution

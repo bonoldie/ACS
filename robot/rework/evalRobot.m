@@ -16,4 +16,7 @@ function [evalStructure, torques] = evalRobot(roboticStructure, jointValues)
     end
 
     torques = subs(evalStructure.eq_motion, evalStructure.jointsSymbol(:), jointValues(:));
+
+    evalStructure.energy.kinetic = double(subs(evalStructure.energy.kinetic, evalStructure.jointsSymbol(:), jointValues(:)));
+    evalStructure.energy.potential = double(subs(evalStructure.energy.potential, evalStructure.jointsSymbol(:), jointValues(:)));
 end
