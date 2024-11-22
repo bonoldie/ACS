@@ -65,6 +65,8 @@ g =  [0;0;-9.81];
 % Custom robotic structure
 myRobot = loadRobot(transforms, framesName, jointsType, linksName, m, MoI, CoM, [q dq ddq], g);
 
+% myRobot.motors = {loadMotor}
+
 % Robotic systems toolbox setup
 robot.getBody('Link1').Mass = m(2);
 robot.getBody('Link2').Mass = m(3);
@@ -110,13 +112,33 @@ if 0
 end
 
 % Inverse dynamics via the Lagrange model
-[myEvaluatedRobot1, torques1] = evalRobot(myRobot, zeroTorqueConfiguration);
-[myEvaluatedRobot2, torques2] = evalRobot(myRobot, velConfiguration);
-[myEvaluatedRobot3, torques3] = evalRobot(myRobot, accelConfiguration);
+[myEvaluatedRobot1, l_torques1] = evalRobot(myRobot, zeroTorqueConfiguration);
+[myEvaluatedRobot2, l_torques2] = evalRobot(myRobot, velConfiguration);
+[myEvaluatedRobot3, l_torques3] = evalRobot(myRobot, accelConfiguration);
 
 % Robotics toolbox inverse dynamics
 toolbox_toques1 = inverseDynamics(robot, zeroTorqueConfiguration(:, 1),zeroTorqueConfiguration(:, 2),zeroTorqueConfiguration(:, 3));
 toolbox_toques2 = inverseDynamics(robot, velConfiguration(:, 1),velConfiguration(:, 2),velConfiguration(:, 3));
 toolbox_toques3 = inverseDynamics(robot, accelConfiguration(:, 1),accelConfiguration(:, 2),accelConfiguration(:, 3));
 
-% Newton-Euler inverse dynamics solution
+% Newton-Euler recursive method for inverse dynamics
+
+he = [0 0 0 0 0 0]';
+
+syms k1 k2 k3 real
+syms Im1 Im2 Im3 real
+syms Fv1 Fs1 Fv2 Fs2 Fv3 Fs3 real
+
+motor1 = loadMotor(k1, Im1, [0;0;1]);
+friction1 = loadFriction(Fv1, Fs1);
+motor2 = loadMotor(k2, Im2, [0;0;1]);
+friction2 = loadFriction(Fv2, Fs2);
+motor3 = loadMotor(k3, Im3, [0;0;1]);
+friction3 = loadFriction(Fv3, Fs3);
+
+myRobot.motors = {motor1, motor2, motor3};
+myRobot.frictions = {friction1, friction2, friction3};
+
+[ne_torques1] = newtonEuler(myRobot, he, [0;0;0], [0;0;0], [0;0;0]);
+
+
