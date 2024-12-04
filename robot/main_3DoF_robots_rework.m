@@ -167,6 +167,14 @@ syms k1 k2 k3 real
 syms Im1 Im2 Im3 real
 syms Fv1 Fs1 Fv2 Fs2 Fv3 Fs3 real
 
+Im = [Im1; Im2; Im3];
+
+Fs = [Fs1; Fs2; Fs3];
+Fs_val = [0;0;0];
+
+Fv = [Fv1; Fv2; Fv3];
+Fv_val = [0;0;0];
+
 motor1 = loadMotor(k1, Im1, [0;0;1]);
 friction1 = loadFriction(Fv1, Fs1);
 motor2 = loadMotor(k2, Im2, [0;0;1]);
@@ -179,36 +187,57 @@ myRobot_I_CoM.motors = {motor1, motor2, motor3};
 myRobot.frictions = {friction1, friction2, friction3};
 myRobot_I_CoM.frictions = {friction1, friction2, friction3};
 
-[ne_tau1, r, r_c, ddp_c] = newtonEuler(myRobot_I_CoM, he, [0;0;0], [0;0;0], [0;0;0]);
+[ne_tau1, ne_B, ne_C_vec, ne_G] = newtonEuler(myRobot, he, [0;0;0], [0;0;0], [0;0;0]);
 
 ne_torques1 = subs(ne_tau1,[q;dq;ddq],zeroTorqueConfiguration(:));
-ne_torques2 = subs(ne_tau1,[q;dq;ddq],velConfiguration(:));
-ne_torques3 = subs(ne_tau1,[q;dq;ddq],accelConfiguration(:));
+ne_torques2 = subs(ne_tau1,[q;dq;ddq;Fs;Fv],[velConfiguration(:);Fs_val; Fv_val]);
+ne_torques3 = subs(ne_tau1,[q;dq;ddq;Fs;Fv],[accelConfiguration(:);Fs_val; Fv_val]);
 
 ne_torques1_A = subs(ne_tau1,[q;dq;ddq],PoseAConfiguration(:));
-ne_torques2_A = subs(ne_tau1,[q;dq;ddq],velAConfiguration(:));
-ne_torques3_A = subs(ne_tau1,[q;dq;ddq],accelAConfiguration(:));
+ne_torques2_A = subs(ne_tau1,[q;dq;ddq;Fs;Fv],[velAConfiguration(:);Fs_val; Fv_val]);
+ne_torques3_A = subs(ne_tau1,[q;dq;ddq;Fs;Fv],[accelAConfiguration(:);Fs_val; Fv_val]);
 
+%% Dynamics matrices check
 
-figure();
+ne_B;
+myRobot.dynamics.B;
 
-jointsIndex = find(cell2mat(cellfun(@(x) ismember(x, {'Prismatic','Revolute'}), myRobot.jointsType, 'UniformOutput', 0)));
+subs(ne_C_vec, [Fs;Fv], [Fs_val;Fv_val]);
+myRobot.dynamics.C * dq;
 
-for i=1:myRobot.DOF
-    R_b_i = myRobot.T_b_i{jointsIndex(i)}(1:3, 1:3);
+ne_G;
+myRobot.dynamics.G;
 
-    com = subs(CoM{jointsIndex(i)}, [q], PoseAConfiguration(1:3, 1));
-    eval_ddp_c = subs(R_b_i * ddp_c{i}, [q;dq;ddq], PoseAConfiguration(:));
+%% Parameter estimations
+% TODO
 
-    plot3(com(1), com(2), com(3), "*");
+%% Dynamic model in the operational space
+% TODO
 
-    quiver3(com(1), com(2), com(3),eval_ddp_c(1), eval_ddp_c(2), eval_ddp_c(3), 1);
-    hold on;
-end
+%% Save the Robot dynamics model
 
-plotframe();
-axis equal;
-axis auto;
+save("robot_model", "myRobot");
+
+%% Plotting
+% figure();
+% 
+% jointsIndex = find(cell2mat(cellfun(@(x) ismember(x, {'Prismatic','Revolute'}), myRobot.jointsType, 'UniformOutput', 0)));
+% 
+% for i=1:myRobot.DOF
+%     R_b_i = myRobot.T_b_i{jointsIndex(i)}(1:3, 1:3);
+% 
+%     com = subs(CoM{jointsIndex(i)}, [q], PoseAConfiguration(1:3, 1));
+%     eval_ddp_c = subs(R_b_i * ddp_c{i}, [q;dq;ddq], PoseAConfiguration(:));
+% 
+%     plot3(com(1), com(2), com(3), "*");
+% 
+%     quiver3(com(1), com(2), com(3),eval_ddp_c(1), eval_ddp_c(2), eval_ddp_c(3), 1);
+%     hold on;
+% end
+% 
+% plotframe();
+% axis equal;
+% axis auto;
 
 
 % figure();

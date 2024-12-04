@@ -1,4 +1,4 @@
-function [torques, r, r_c, ddp_c] = newtonEuler(roboticStructure, he, w0, dw0, ddp0)
+ function [torques, B, C_vec, G] = newtonEuler(roboticStructure, he, w0, dw0, ddp0)
     %NEWTONEULER Summary of this function goes here
     %   Detailed explanation goes here
 
@@ -12,7 +12,7 @@ function [torques, r, r_c, ddp_c] = newtonEuler(roboticStructure, he, w0, dw0, d
     ddp = cell(1,3);
     ddp_c = cell(1,3);
 
-    ddp0 = ddp0 - [0;-9.81;0];
+    ddp0 = ddp0 - roboticStructure.T_b_i{min(1, jointsIndex(1)-1)}(1:3, 1:3)' * roboticStructure.g;
 
     r = cell(1,3);
     r_c = cell(1,3);
@@ -98,4 +98,23 @@ function [torques, r, r_c, ddp_c] = newtonEuler(roboticStructure, he, w0, dw0, d
             torques(i) = f{i}'*R_minus'*z0 + roboticStructure.frictions{i}.Fv * roboticStructure.jointsSymbol(i, 2) + roboticStructure.frictions{i}.Fs * sign(roboticStructure.jointsSymbol(i, 2));
         end
     end
+
+    % Dynamics matrices from the NE result
+
+    qSyms = roboticStructure.jointsSymbol(:,1);
+    dqSyms = roboticStructure.jointsSymbol(:,2);
+
+    G = subs(torques, roboticStructure.jointsSymbol(:), [qSyms; zeros(roboticStructure.DOF * 2, 1)]);
+    G = simplify(G);
+
+    C_vec = subs(torques, roboticStructure.jointsSymbol(:), [qSyms;dqSyms;zeros(roboticStructure.DOF, 1)]) - G;
+    C_vec = simplify(C_vec);
+
+    B = sym(zeros(roboticStructure.DOF));
+
+    for i=1:roboticStructure.DOF
+         B(1:3, i) = subs(torques, roboticStructure.jointsSymbol(:), [qSyms; zeros(roboticStructure.DOF, 1);  double((1:3)'==i)]) - G;
+    end
+    
+    B = simplify(B);
 end

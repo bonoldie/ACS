@@ -17,16 +17,24 @@ roboticStructure = struct( ...
 );
 
 roboticStructure.dynamics = struct( ...
-    'B', calculateBMatrix(roboticStructure)...
+    'B', computeBMatrix(roboticStructure)...
 );
 
-roboticStructure.dynamics.C = calculateCMatrix(roboticStructure);
-roboticStructure.dynamics.G = calculateGMatrix(roboticStructure);
+roboticStructure.dynamics.C = computeCMatrix(roboticStructure);
+roboticStructure.dynamics.G = computeGMatrix(roboticStructure);
 
 roboticStructure.eq_motion = roboticStructure.dynamics.B*jointsSymbol(:,3) + roboticStructure.dynamics.C*jointsSymbol(:,2) + roboticStructure.dynamics.G;
 
 roboticStructure.energy.kinetic = 0.5 * jointsSymbol(:, 2)' * roboticStructure.dynamics.B * jointsSymbol(:, 2);
 roboticStructure.energy.potential = calculatePotentialEnergy(roboticStructure);
+
+roboticStructure.J = geometricJac(roboticStructure);
+
+roboticStructure.func.B = matlabFunction(roboticStructure.dynamics.B,Vars=roboticStructure.jointsSymbol(:, 1));
+roboticStructure.func.C = matlabFunction(roboticStructure.dynamics.C,Vars=[roboticStructure.jointsSymbol(:, 1); roboticStructure.jointsSymbol(:, 2)]);
+roboticStructure.func.G = matlabFunction(roboticStructure.dynamics.G,Vars=roboticStructure.jointsSymbol(:, 1));
+roboticStructure.func.J = matlabFunction(roboticStructure.J,Vars=roboticStructure.jointsSymbol(:, 1));
+
 
 end
 
