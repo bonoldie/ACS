@@ -22,4 +22,7 @@ function [evalStructure, torques] = evalRobot(roboticStructure, jointValues)
 
     
     evalStructure.J = double(subs(evalStructure.J, evalStructure.jointsSymbol(:), jointValues(:)));
+
+    evalStructure.Ja = double(subs(evalStructure.Ja, evalStructure.jointsSymbol(:), jointValues(:)));
+    evalStructure.Ta = double(subs(evalStructure.Ta, evalStructure.jointsSymbol(:), jointValues(:)));
 end

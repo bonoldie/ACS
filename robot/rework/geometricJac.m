@@ -22,4 +22,6 @@ function [J] = geometricJac(roboticStructure)
             ];
         end
     end
+
+    J = simplify(J);
 end

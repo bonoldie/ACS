@@ -7,7 +7,7 @@ addpath(genpath("."));
 % loads robot from the urdf file
 robot = importrobot('RPR_yyz_renamed.urdf');
 % robot configurations are now row vectors
-robot.DataFormat = 'col'; 
+robot.DataFormat = 'col';
 showdetails(robot);
 
 % symbols init for joint variables
@@ -129,11 +129,10 @@ velAConfiguration = PoseAConfiguration + [
 
 accelAConfiguration = PoseAConfiguration + [
 %   q    dq      ddq
-    0,   0       10.5;  % 1
+    0,   0       10.5;  %
     0,   0       -10.5; % 2
-    0,   0       -1.5; % 3
+    0,   0       -1.5;  % 3
 ];
-
 
 if 0
     figure();
@@ -208,14 +207,14 @@ myRobot.dynamics.C * dq;
 ne_G;
 myRobot.dynamics.G;
 
-%% Parameter estimations
-% TODO
-
 %% Dynamic model in the operational space
-% TODO
+
+% Ba = inv(myRobot.Ja * inv(myRobot.dynamics.B) * myRobot.Ja');
+% Ca_dx = Ba*Ja*inv(myRobot.dynamics.B)*myRobot.dynamics.C*dq - Ba*diff(myRobot.Ja)*dq;
+% ga = Ba*myRobot.Ja*inv(B)*myRobot.dynamics.G;
+% ua_e = myRobot.Ta'*he;
 
 %% Save the Robot dynamics model
-
 save("robot_model", "myRobot");
 
 %% Plotting

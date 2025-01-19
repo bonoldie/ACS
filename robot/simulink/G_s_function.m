@@ -1,4 +1,4 @@
-function robot_s_function(block)
+function G_s_function(block)
 %MSFUNTMPL_BASIC A Template for a Level-2 MATLAB S-Function
 %   The MATLAB S-function is written as a MATLAB function with the
 %   same name as the S-function. Replace 'msfuntmpl_basic' with the 
@@ -29,8 +29,8 @@ setup(block);
 function setup(block)
 
 % Register number of ports
-block.NumInputPorts  = 5;
-block.NumOutputPorts = 3;
+block.NumInputPorts  = 1;
+block.NumOutputPorts = 1;
 
 % Register parameters
 block.NumDialogPrms     = 1;
@@ -39,54 +39,17 @@ block.NumDialogPrms     = 1;
 block.SetPreCompInpPortInfoToDynamic;
 block.SetPreCompOutPortInfoToDynamic;
 
-% Override input port properties
-% block.InputPort(1).setName('tua');  
+% Override input port properties  'q';
 block.InputPort(1).Dimensions        =  block.DialogPrm(1).Data.DOF;
 block.InputPort(1).DatatypeID  = 0;  % double
 block.InputPort(1).Complexity  = 'Real';
 block.InputPort(1).DirectFeedthrough = true;
 
-% block.InputPort(2).Name = 'q_initial';  
-block.InputPort(2).Dimensions        =  block.DialogPrm(1).Data.DOF;
-block.InputPort(2).DatatypeID  = 0;  % double
-block.InputPort(2).Complexity  = 'Real';
-block.InputPort(2).DirectFeedthrough = true;
-
-% block.InputPort(3).Name = 'dq_initial';  
-block.InputPort(3).Dimensions        =  block.DialogPrm(1).Data.DOF;
-block.InputPort(3).DatatypeID  = 0;  % double
-block.InputPort(3).Complexity  = 'Real';
-block.InputPort(3).DirectFeedthrough = true;
-
-% block.InputPort(4).Name = 'ddq_initial';  
-block.InputPort(4).Dimensions        =  block.DialogPrm(1).Data.DOF;
-block.InputPort(4).DatatypeID  = 0;  % double
-block.InputPort(4).Complexity  = 'Real';
-block.InputPort(4).DirectFeedthrough = true;
-
-% block.InputPort(5).Name = 'he';  
-block.InputPort(5).Dimensions        = 6;
-block.InputPort(5).DatatypeID  = 0;  % double
-block.InputPort(5).Complexity  = 'Real';
-block.InputPort(5).DirectFeedthrough = true;
-
-
 % Override output port properties
-% block.OutputPort(1).Name = 'q';
+% block.OutputPort(1).Name = 'tau';
 block.OutputPort(1).Dimensions       =  block.DialogPrm(1).Data.DOF;
 block.OutputPort(1).DatatypeID  = 0; % double
 block.OutputPort(1).Complexity  = 'Real';
-
-% block.OutputPort(2).Name = 'dq';
-block.OutputPort(2).Dimensions       =  block.DialogPrm(1).Data.DOF;
-block.OutputPort(2).DatatypeID  = 0; % double
-block.OutputPort(2).Complexity  = 'Real';
-
-% block.OutputPort(3).Name = 'ddq';
-block.OutputPort(3).Dimensions       =  block.DialogPrm(1).Data.DOF;
-block.OutputPort(3).DatatypeID  = 0; % double
-block.OutputPort(3).Complexity  = 'Real';
-
 
 % Register sample times
 %  [0 offset]            : Continuous sample time
@@ -96,7 +59,7 @@ block.OutputPort(3).Complexity  = 'Real';
 %  [-2, 0]               : Variable sample time
 block.SampleTimes = [0 0];
 
-block.NumContStates = block.DialogPrm(1).Data.DOF * 2;
+block.NumContStates = 0;
 
 % Specify the block simStateCompliance. The allowed values are:
 %    'UnknownSimState', < The default setting; warn and assume DefaultSimState
@@ -133,7 +96,6 @@ block.RegBlockMethod('Terminate', @Terminate);
 %%   C MEX counterpart: mdlSetWorkWidths
 %%
 function DoPostPropSetup(block)
-firstIteration = true;
 
 %%
 %% InitializeConditions:
@@ -170,15 +132,8 @@ function Start(block)
 %%
 function Outputs(block)
 
-block.OutputPort(1).Data = block.ContStates.Data(1: block.DialogPrm(1).Data.DOF);
-block.OutputPort(2).Data = block.ContStates.Data(block.DialogPrm(1).Data.DOF+1: block.DialogPrm(1).Data.DOF*2);
-
-
-if()
-% ddq = block.Derivatives.Data(block.DialogPrm(1).Data.DOF+1: block.DialogPrm(1).Data.DOF*2);
-
-% block.OutputPort(3).Data = block.Derivatives.Data(block.DialogPrm(1).Data.DOF+1: block.DialogPrm(1).Data.DOF*2);
-
+q = block.InputPort(1).Data;
+block.OutputPort(1).Data = block.DialogPrm(1).Data.func.G(q(1), q(2), q(3));
 
 %end Outputs
 
@@ -204,28 +159,9 @@ function Update(block)
 %%
 function Derivatives(block)
 
-if block.CurrentTime == 0
-    block.ContStates.Data(1: block.DialogPrm(1).Data.DOF) = block.InputPort(2).Data;
-    block.ContStates.Data( block.DialogPrm(1).Data.DOF+1:  block.DialogPrm(1).Data.DOF*2) = block.InputPort(3).Data;
-end
-
-q = block.ContStates.Data(1:block.DialogPrm(1).Data.DOF);
-dq = block.ContStates.Data(block.DialogPrm(1).Data.DOF+1:block.DialogPrm(1).Data.DOF*2);
-tau = block.InputPort(1).Data;
-he = block.InputPort(5).Data;
-
-B = block.DialogPrm(1).Data.func.B(q(1), q(2), q(3)) ;
-C = block.DialogPrm(1).Data.func.C(q(1), q(2), q(3),dq(1), dq(2), dq(3)) ;
-G = block.DialogPrm(1).Data.func.G(q(1), q(2), q(3));
-J = block.DialogPrm(1).Data.func.J(q(1), q(2), q(3));
-
-ddq = inv(B) * (tau - C*dq - G - J'*he);
-
-block.Derivatives.Data(1: block.DialogPrm(1).Data.DOF) = dq;
-block.Derivatives.Data( block.DialogPrm(1).Data.DOF+1: block.DialogPrm(1).Data.DOF*2) = ddq;
-
 % block.Dwork(1).Data = dq;
 % block.Dwork(2).Data = ddq;
+
 
 %end Derivatives
 
