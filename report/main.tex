@@ -1,15 +1,19 @@
 \documentclass{article}
+
 \usepackage{graphicx}
 \usepackage{blindtext}
 \usepackage{titlesec}
 \usepackage{subfig}
 \usepackage{kinematikz}
 \usepackage{ragged2e}
-\usepackage{amsmath}
+\usepackage{amsmath, amsfonts, amssymb}
 \usepackage{caption}
 \usepackage{slashbox}
+\usepackage{siunitx}
+\sisetup{detect-all}
 \usepackage[hidelinks]{hyperref}
 \usepackage{float}
+\usepackage{adjustbox}  
 \usepackage[super]{nth}
 \usepackage[bottom]{footmisc}
 \usepackage{matlab-prettifier}
@@ -24,7 +28,7 @@
     \large Course assignments
 }
 \author{Enrico Bonoldi - VR502852}
-\date{February 2025}
+\date{A.Y. 2024/25}
 
 \begin{document}
 
@@ -37,8 +41,7 @@
 
 \section{Introduction}
 
-This techical report is about the assignments of the \textbf{Advanced control systems} course.
-\\
+This technical report outlines the coursework for the \textbf{Advanced Control Systems} class.\\
 The code is available at \hyperlink{https://github.com/bonoldie/ACS}{Github}.
 
 \section{Robot structure and kinematics}
@@ -54,10 +57,10 @@ The code is available at \hyperlink{https://github.com/bonoldie/ACS}{Github}.
 \end{figure}
 
 \begin{align}
-    \delta_{b-0} & = 0.15 \label{eq:delta_b_0} \\
-    \delta_{0-1} & = 0.4 \label{eq:delta_0_1}  \\
-    \delta_{1-2} & = 0.3 \label{eq:delta_1_2}  \\
-    \delta_{2-3} & = 0.16 \label{eq:delta_2_3}
+    \delta_{b-0} & = \SI{0.15}{\meter}\label{eq:delta_b_0}  \\
+    \delta_{0-1} & = \SI{0.4}{\meter} \label{eq:delta_0_1}  \\
+    \delta_{1-2} & = \SI{0.3}{\meter} \label{eq:delta_1_2}  \\
+    \delta_{2-3} & = \SI{0.16}{\meter} \label{eq:delta_2_3}
 \end{align}
 
 \subsection{DH table}
@@ -77,11 +80,12 @@ The code is available at \hyperlink{https://github.com/bonoldie/ACS}{Github}.
     \end{tabular}
 \end{center}
 
-To have the same alignment at the end-effector as the one in from the robotic toolbox we must rotate around the y axis (of the frame $\sigma_3$) by $\frac{\pi}{2}$ rad.
+To have the same alignment at the end-effector as the one in from the robotic toolbox we must rotate around the y axis (of the frame $\Sigma_3$) by $\SI[parse-numbers=false]{\frac{\pi}{2}}{\radian}$ .
 
 \subsection{Direct kinematics}
 
-
+We then procede to compute the direct kinematics by chaining all the transformations from each frame $\Sigma_i$ to the next($\Sigma_{i+1}$).
+Each transformation is obtained by pluggin inside the following matrix the correct line of the aforementioned DH table.
 
 \begin{equation}
     T_{i}^{i-1} = \begin{bmatrix}
@@ -92,9 +96,13 @@ To have the same alignment at the end-effector as the one in from the robotic to
     \end{bmatrix}
     \label{eq:homogenous_transformation_mat}
 \end{equation}
-
+\\
+Then
+\begin{equation}
+    T_{ee}^{b} = T_{0}^{b} \times T_{1}^{0} \times T_{2}^{1} \times T_{3}^{2} \times T_{ee}^{3}
+\end{equation}
 \subsection{Inverse kinematics}
-A closed for solution of the inverse kinematics problem can be found by considering only the cartesian coordinates of the end-effector (since we have only 3 DoF).
+A closed form solution of the inverse kinematics problem can be found by considering only the cartesian coordinates of the end-effector (since we have only 3 DoF).
 
 \begin{flalign}
      & x_{ee} = 0.4\,\cos(q_1) + 0.16\,\cos(q_1)\cos(q_3) \label{eq:x_ee}        \\
@@ -102,7 +110,7 @@ A closed for solution of the inverse kinematics problem can be found by consider
      & z_{ee} = 0.4\,\sin(q_1) + 0.16\,\cos(q_3)\sin(q_1) + 0.15 \label{eq:z_ee}
 \end{flalign}
 
-TODO: calculations?
+By solving this system of equation(\ref{eq:x_ee})(\ref{eq:y_ee})(\ref{eq:z_ee}) we obtain equations(\ref{eq:q_1})(\ref{eq:q_2})(\ref{eq:q_3})
 
 \begin{flalign}
      & q_1 = \arctan\left({\frac{z_{ee} - 0.15}{x_{ee}}}\right) \label{eq:q_1}                         \\
@@ -123,7 +131,21 @@ Figure(\ref{fig:ik}) shows the case in which multiple valid solutions exists.
 
 \subsection{Jacobian matrices}
 
+\begin{equation}
+    J(q) =  \begin{bmatrix}
+        -0.0800 \sin(q_1)(2\cos(q_3) + 5) & 0  & -0.1600 \cos(q_1)\sin(q_3) \\
+        0                                 & -1 & 0.1600 \cos(q_3)           \\
+        0.0800 \cos(q_1)(2\cos(q_3) + 5)  & 0  & -0.1600 \sin(q_1)\sin(q_3) \\
+        0                                 & 0  & -\sin(q_1)                 \\
+        -1                                & 0  & 0                          \\
+        0                                 & 0  & \cos(q_1)
+    \end{bmatrix}
+    \label{eq:Jg}
+\end{equation}
+
 The Euler angles sequence chosen for the analytical Jacobian matrix is \textbf{\textit{ZYZ}}.
+
+
 
 
 \section{Manipulator dynamics}
@@ -134,7 +156,7 @@ The Euler angles sequence chosen for the analytical Jacobian matrix is \textbf{\
     \label{eq:potential_energy}
 \end{flalign}
 
-Where g is the gravitational acceleration.
+Where $g$ is the gravitational acceleration.
 
 \subsection{Kinetic energy}
 
@@ -150,6 +172,8 @@ Where g is the gravitational acceleration.
 \end{equation}
 
 \subsection{Dynamic model}
+
+\subsection{Lagrangian formulation}
 
 \begin{equation}
     B(q) = \begin{bmatrix}
@@ -184,38 +208,24 @@ Where g is the gravitational acceleration.
     B(q)\,\ddot{q} + C(q, \dot{q})\,\dot{q} + g(q) = \tau \\
     \label{eq:eq_motion}
 \end{equation}
+\\
+Equation(\ref{eq:eq_motion}) is the \textit{equation of motion}, a set of 3 nonlinear second-order differential equations.
 
-Equation(\ref{eq:eq_motion}) is a set of 3 nonlinear second-order differential equations.
-
-\iffalse
-    TODO: this one is close but wrong!
-    \begin{equation}
-        \begin{bmatrix}
-            0.3924\,\cos(q1)\,(2\,\cos(q3) + 25) + \ddot{q_1}\,(0.0640\,\cos(q3)              \\
-            + 0.0126\,\cos(q3)^2 + 0.4105) - 2\,\dot{q_1}\,\dot{q_3}\,(0.0320\,\sin(q3)       \\
-            + 0.0126\,\cos(q3)\,\sin(q3))                                                     \\
-            \\
-            0.0800\,\sin(q3)\,\dot{q_3}^2 + 2\,\ddot{q_2} - 0.0800\,\ddot{q_3}\,\cos(q3)      \\
-            \\
-            (0.0320\,\sin(q3) + 0.0126\,\cos(q3)\,\sin(q3))\,\dot{q_1}^2 + 0.0256\,\ddot{q_3} \\
-            - 0.7848\,\sin(q1)\,\sin(q3) - 0.0800\,\ddot{q_2}\,\cos(q3)
-        \end{bmatrix} = \begin{bmatrix}
-            \tau_1 \\
-            \tau_2 \\
-            \tau_3
-        \end{bmatrix}
-        \label{eq:eq_motion_explicit}
-    \end{equation}
-\fi
 
 \subsection{RNE formulation}
 Using the Newton–Euler equations it is possible to set up an algorithm composed by a \textbf{forward recursion} step in which we propagate the links velocity and acceleration from the base link to the EE and a \textbf{backward recursion} step in which we propagate the forces from the EE to the base link.
-
-TODO: add B,C*qdot,g matrices from the newton-euler approach
+Symbols\footnote{Symbolic Math Toolbox} can be used inside the calculation using the RNE approach to obtain $B(q)$, $C(q, \dot{q})\cdot\dot{q}$ and $g(q)$ matrices.
 
 \subsection{Dynamic model in the operational space}
 
-TODO: add just matrices T and J or all of them? ask the others
+The aforementioned dynamic model can be transposed in the operational space via the following set of equations.
+
+\begin{align}
+    B_a(q)                 & = (J_a(q) B(q)^{-1} J_a(q)^\intercal)^{-1} \label{eq:b_a_op}                                          \\
+    C_a(q, \dot{q})\dot{x} & = B_a(q) J_a(q) B(q) C(q,\dot{q})\dot{q} - B_a(q) \dot{J_a}(q, \dot{q})\:\dot{q} \label{eq:c_a_dx_op} \\
+    g_a(q)                 & = B_a(q) J_a(q) B(q)^{-1} g(q) \label{eq:g_a_op}                                                      \\
+    u_{a_e}(q)             & = T_a(q)^\intercal h_e \label{eq:u_a_e_op}                                                            \\
+\end{align}
 
 \subsection{Bonus: Parameters estimation}
 
@@ -223,7 +233,7 @@ TODO: add just matrices T and J or all of them? ask the others
 \begin{figure}[H]
     \captionsetup{justification=centering}
     \noindent\makebox[\textwidth]{
-        \includegraphics[scale=0.5]{param_estim/param_estim.jpg}
+        \includegraphics[scale=0.3]{param_estim/param_estim.jpg}
     }
     \caption{Parameters estimation \\ different simulation steps amount are taken into account}
     \label{fig:param_estim}
@@ -233,7 +243,7 @@ TODO: add just matrices T and J or all of them? ask the others
 \begin{figure}[H]
     \captionsetup{justification=centering}
     \noindent\makebox[\textwidth]{
-        \includegraphics[scale=0.5]{param_estim/param_estim_error.jpg}
+        \includegraphics[scale=0.3]{param_estim/param_estim_error.jpg}
     }
     \caption{Parameters estimation error \\ different simulation steps amount are taken into account}
     \label{fig:param_estim_error}
@@ -241,7 +251,7 @@ TODO: add just matrices T and J or all of them? ask the others
 
 
 
-\begin{table}
+\begin{table}[H]
     \begin{tabular}{|c|c|c|}
         \hline
         \backslashbox{Link \#}{Property} & Mass & Inertia tensor (w.r.t. CoM) \\
@@ -267,7 +277,7 @@ TODO: add just matrices T and J or all of them? ask the others
     \label{tab:real_params}
 \end{table}
 
-\begin{table}
+\begin{table}[H]
     \begin{tabular}{|c|c|c|}
         \hline
         \backslashbox{Link \#}{Property} & Mass & Inertia tensor (w.r.t. CoM) \\
@@ -298,56 +308,38 @@ TODO: add just matrices T and J or all of them? ask the others
 
 \subsection{Joint Space PD control law with gravity compensation}
 
+\begin{equation}
+    \tau = g(q_d) + K_P(q_d - q) - K_D\dot{q}
+    \label{eq:js_PD_gravity_comp}
+\end{equation}
+
+
 \begin{figure}[H]
     \noindent
     \makebox[\textwidth]{
-        \includegraphics[scale=0.7]{schemes/joint_space_PD_with_gravity_comp/PD_with_g_compensation_scheme.pdf}
+        \includegraphics[scale=0.45]{schemes/joint_space_PD_with_gravity_comp/PD_with_g_compensation_scheme.pdf}
     }
 
     \caption{Joint Space PD control law with gravity compensation control scheme}
     \label{fig:js_PD_gravity_compensation_scheme}
 \end{figure}
 
-\begin{figure}[H]
-    \noindent
-    \makebox[\textwidth]{
-        \includegraphics[scale=0.5]{schemes/joint_space_PD_with_gravity_comp/joints.jpg}
-    }
-
-    \caption{Joint Space PD control law with gravity compensation}
-    \label{fig:js_PD_gravity_compensation_joints}
-\end{figure}
 
 \begin{figure}[H]
-    \captionsetup{justification=centering}
-    \noindent
-    \makebox[\textwidth]{
-        \includegraphics[scale=0.5]{schemes/joint_space_PD_with_gravity_comp/joints_wrong_g.jpg}
-    }
-
-    \caption{Joint Space PD control law with gravity compensation \\ compensated gravity term is $g'(q)$}
-    \label{fig:js_PD_gravity_compensation_joint_wrong_g}
+    \hspace*{-2cm}
+    \subfloat[][]{\includegraphics[scale=0.15]{schemes/joint_space_PD_with_gravity_comp/joints.jpg}}
+    \subfloat[][compensated gravity term is $g'(q)$]{\includegraphics[scale=0.15]{schemes/joint_space_PD_with_gravity_comp/joints_wrong_g.jpg}}
+    \subfloat[][compensated gravity term is $g(q_d)$]{\includegraphics[scale=0.15]{schemes/joint_space_PD_with_gravity_comp/joints_g_of_q_d.jpg}}
+    \caption{Joint Space PD control law with gravity compensation }
+    \label{fig:js_PD_gravity_compensation_joint}
 \end{figure}
-
-\begin{figure}[H]
-    \captionsetup{justification=centering}
-    \noindent
-    \makebox[\textwidth]{
-        \includegraphics[scale=0.5]{schemes/joint_space_PD_with_gravity_comp/joints_g_of_q_d.jpg}
-    }
-
-    \caption{Joint Space PD control law with gravity compensation \\ compensated gravity term is $g(q_d)$}
-    \label{fig:js_PD_gravity_compensation_joint_wrong_g}
-\end{figure}
-
-
 
 
 \begin{figure}[H]
     \captionsetup{justification=centering}
     \noindent
     \makebox[\textwidth]{
-        \includegraphics[scale=0.5]{schemes/joint_space_PD_with_gravity_comp/joints_tracking.jpg}
+        \includegraphics[scale=0.3]{schemes/joint_space_PD_with_gravity_comp/joints_tracking.jpg}
     }
 
     \caption{Joint Space PD control law with gravity compensation \\ tracking task}
@@ -356,10 +348,23 @@ TODO: add just matrices T and J or all of them? ask the others
 
 \subsection{Joint Space Inverse Dynamics control law}
 
+Eq(\ref{eq:js_inverse_dynamics_control_inner}) is the nonlinear compensation and decoupling inner loop, 
+eq(\ref{eq:js_inverse_dynamics_control_outer}) is the outer control loop. 
+
+\begin{equation}
+    \tau = B(q)\;y + n(q, q\dot{q})
+    \label{eq:js_inverse_dynamics_control_inner}
+\end{equation}
+
+\begin{equation}
+    \ddot{q} = y
+    \label{eq:js_inverse_dynamics_control_outer}
+\end{equation}
+
 \begin{figure}[H]
     \noindent
     \makebox[\textwidth]{
-        \includegraphics[scale=0.7]{schemes/joint_space_inverse_dynamics/Inverse_dynamics_control.pdf}
+        \includegraphics[scale=0.45]{schemes/joint_space_inverse_dynamics/Inverse_dynamics_control.pdf}
     }
 
     \caption{Joint Space Inverse Dynamics control law control scheme}
@@ -367,34 +372,28 @@ TODO: add just matrices T and J or all of them? ask the others
 \end{figure}
 
 
-\begin{figure}[H]
-    \noindent
-    \makebox[\textwidth]{
-        \includegraphics[scale=0.5]{schemes/joint_space_inverse_dynamics/joints.jpg}
-    }
 
+
+\begin{figure}[H]
+    \hspace*{-2.5cm}
+    \subfloat[][]{\includegraphics[scale=0.25]{schemes/joint_space_inverse_dynamics/joints.jpg}}
+    \subfloat[][dynamics matrices are a little off]{\includegraphics[scale=0.25]{schemes/joint_space_inverse_dynamics/joints_wrong_dynamics_matrices.jpg}}
     \caption{Joint Space Inverse Dynamics control law}
-    \label{fig:js_Inverse_dynamics_joints}
+    \label{fig:js_Inverse_dynamics_joits}
 \end{figure}
+
+
+
+\subsection{Operational Space PD control law with gravity compensation}
+
+\begin{equation}
+    \tau = g(q) + J_a^{\intercal}(q)\;K_P\;\tilde{x} - J_a^{\intercal}(q)\;K_D\;J_a(q)\;\dot{q} 
+\end{equation}
 
 \begin{figure}[H]
     \noindent
     \makebox[\textwidth]{
-        \includegraphics[scale=0.5]{schemes/joint_space_inverse_dynamics/joints_wrong_dynamics_matrices.jpg}
-    }
-
-    \caption{Joint Space Inverse Dynamics control law \\ dynamics matrices are off}
-    \label{fig:js_Inverse_dynamics_joits_wrong_dynamics}
-\end{figure}
-
-
-\subsection{Operations Space PD control law with gravity compensation}
-
-
-\begin{figure}[H]
-    \noindent
-    \makebox[\textwidth]{
-        \includegraphics[scale=0.7]{schemes/op_space_PD_with_gravity_comp/PD_with_g_compensation_op_space_scheme.pdf}
+        \includegraphics[scale=0.45]{schemes/op_space_PD_with_gravity_comp/PD_with_g_compensation_op_space_scheme.pdf}
     }
 
     \caption{Operational Space PD control law with gravity compensation scheme}
@@ -404,13 +403,185 @@ TODO: add just matrices T and J or all of them? ask the others
 \begin{figure}[H]
     \noindent
     \makebox[\textwidth]{
-        \includegraphics[scale=0.5]{schemes/op_space_PD_with_gravity_comp/joints.jpg}
+        \includegraphics[scale=0.3]{schemes/op_space_PD_with_gravity_comp/joints.jpg}
     }
 
     \caption{Operational Space PD control law with gravity compensation}
     \label{fig:op_space_PD_g_comp_joints}
 \end{figure}
 
+
+\subsection{Adaptive control}
+
+
+
+\begin{equation}
+    \begin{cases}
+        \tau = Y(q, \dot{q}, \dot{q_r}, \ddot{q_r})\hat{\Theta} + K_D\sigma \\ 
+        \dot{\hat{\Theta}} = \Gamma Y^{\intercal}(q, \dot{q}, \dot{q_r}, \ddot{q_r})\sigma  
+    \end{cases}
+    \label{eq:adaptive_control}
+\end{equation}
+
+\begin{figure}[H]
+    \noindent
+    \makebox[\textwidth]{
+        \includegraphics[scale=0.45]{schemes/adaptive_control/adaptive_control_scheme.pdf}
+    }
+
+    \caption{Adaptive control scheme}
+    \label{fig:adaptive_control_scheme}
+\end{figure}
+
+
+
+\begin{figure}[H]
+    \hspace*{-3cm}
+    \subfloat[][Adaptive control with sinusoidal trajectory]{\includegraphics[scale=0.35]{schemes/adaptive_control/joints.eps}}
+    \subfloat[][Adaptive control with square trajectory acceleration]{\includegraphics[scale=0.35]{schemes/adaptive_control/joints_square_acc.eps}}
+    \caption{Adaptive control}
+    \label{fig:adaptive_control_joints}
+\end{figure}
+
+
+\subsection{Active compliance control}
+
+\begin{equation}
+    \tau = g(q) + J_{A_d}^{\intercal}(q, \tilde{x}) (K_P \tilde{x} - K_D J_{A_d}(q, \tilde{x})\dot{q})
+    \label{eq:active_compliance_control}
+\end{equation}
+
+\begin{figure}[H]
+    \noindent
+    \makebox[\textwidth]{
+        \includegraphics[scale=0.45]{schemes/compliance_control/active_compliance_schema.pdf}
+    }
+    \caption{Active compliance control scheme}
+    \label{fig:compliance_control_scheme}
+\end{figure}
+
+
+\begin{figure}[H]
+    \noindent
+    \makebox[\textwidth]{
+        \includegraphics[scale=0.3]{schemes/compliance_control/robot_and_env.jpg}
+    }
+
+    \caption{Environment}
+    \label{fig:robot_and_env}
+\end{figure}
+
+\begin{figure}[H]
+    \hspace*{-4.5cm}
+    \subfloat[][Active compliance control \\  environment stiffness $K = \SI{50}{N \cdot m^{-1}}$ ]{\includegraphics[scale=0.30]{schemes/compliance_control/pose_force_plot_env.jpg}}
+    \subfloat[][Active compliance control \\  environment stiffness $K = \SI{1}{N \cdot m^{-1}}$ ]{\includegraphics[scale=0.30]{schemes/compliance_control/pose_force_plot_env_low_envK.jpg}}
+    \caption{Active compliance control }
+    \label{fig:active_compliance}
+\end{figure}
+
+
+
+
+\subsection{Impedance control}
+
+\begin{equation}
+    \begin{cases}
+        \tau = B(q)y + n(q, \dot{q}) + J^{\intercal}(q)h_e \\
+        y =  J_A^{-1}M_d^{-1} (M_d\ddot{x_d} + K_D\dot{\tilde{x}} + K_P\tilde{x} - M_d \dot{J_A}(q, \dot{q})\dot{q} - h_A)% (q, \tilde{x}) (K_P \tilde{x} - K_D J_{A_d}(q, \tilde{x})\dot{q})
+    \end{cases}
+    \label{eq:impedance_control_law}
+\end{equation}
+
+\begin{figure}[H]
+    \noindent
+    \makebox[\textwidth]{
+        \includegraphics[scale=0.45]{schemes/impedance_control/impedance_control.pdf}
+    }
+    \caption{Impedance control scheme}
+    \label{fig:impedance_control_scheme}
+\end{figure}
+
+\begin{figure}[H]
+    \hspace*{-3cm}
+    \subfloat[][Higher equivalent matrices]{\includegraphics[scale=0.35]{schemes/impedance_control/position_high_Md_Kd.eps}}
+    \subfloat[][Lower equivalent matrices]{\includegraphics[scale=0.35]{schemes/impedance_control/position_lower_Md_Kd.eps}}
+    \caption{Impedance compliance control }
+    \label{fig:impedance_control}
+\end{figure}
+
+
+\subsection{Admittance control}
+
+
+\begin{figure}[H]
+    \noindent
+    \makebox[\textwidth]{
+        \includegraphics[scale=0.45]{schemes/admittance_control/admittance_control_scheme.pdf}
+    }
+
+    \caption{Admittance control scheme}
+    \label{fig:admittance_control_scheme}
+\end{figure}
+
+\begin{figure}[H]
+    \hspace*{-4.5cm}
+    \subfloat[][Stiff behaviour]{\includegraphics[scale=0.30]{schemes/admittance_control/admittance_control_joints_and_force.jpg}}
+    \subfloat[][Compliant behaviour]{\includegraphics[scale=0.30]{schemes/admittance_control/admittance_control_joints_and_force_compliant.jpg}}
+    \caption{Admittance control}
+    \label{fig:admittance_control}
+\end{figure}
+
+
+
+\subsection{Force control}
+
+
+\begin{figure}[H]
+    \noindent
+    \makebox[\textwidth]{
+        \includegraphics[scale=0.45]{schemes/force_control/force_control_scheme.pdf}
+    }
+
+    \caption{Force control scheme}
+    \label{fig:force_control_scheme}
+\end{figure}
+
+\begin{figure}[H]
+    \hspace*{-4.5cm}
+    \subfloat[][$C_f(s)=5$]{\includegraphics[scale=0.40]{schemes/force_control/force.eps}}
+    \subfloat[][$C_f(s)=5+3\cdot\frac{1}{s}$]{\includegraphics[scale=0.40]{schemes/force_control/force_integrator.eps}}
+    \caption{Force control wrench on environment normal direction}
+    \label{fig:force_control_effort}
+\end{figure}
+
+
+\begin{figure}[H]
+    \hspace*{-4.5cm}
+    \subfloat[][$C_f(s)=5$]{\includegraphics[scale=0.40]{schemes/force_control/joint.eps}}
+    \subfloat[][$C_f(s)=5+3\cdot\frac{1}{s}$]{\includegraphics[scale=0.40]{schemes/force_control/joint_integrator.eps}}
+    \caption{Force control pose ($y$ axis)}
+    \label{fig:force_control_pose}
+\end{figure}
+
+
+\subsection{Parallel force/position control}
+
+\begin{figure}[H]
+    \noindent
+    \makebox[\textwidth]{
+        \includegraphics[scale=0.45]{schemes/force_position_control/parallel_force_position_control_scheme.pdf}
+    }
+    \caption{Force/position control scheme}
+    \label{fig:force_position_control_scheme}
+\end{figure}
+
+\begin{figure}[H]
+    \hspace*{-4.5cm}
+    \subfloat[][$C_f(s)=5$]{\includegraphics[scale=0.40]{schemes/force_position_control/force_position_30s.eps}}
+    \subfloat[][$C_f(s)=5+3\cdot\frac{1}{s}$]{\includegraphics[scale=0.40]{schemes/force_position_control/force_position_integrator.eps}}
+    \caption{Parallel force-position control, end-effector pose and wrench.}
+    \label{fig:parallel_force_control}
+\end{figure}
 
 
 \end{document}

@@ -28,5 +28,10 @@ function [evalStructure, torques] = evalRobot(roboticStructure, jointValues)
     catch
         warning('Ja is singular in this configuration');
     end
-    evalStructure.Ta = double(subs(evalStructure.Ta, evalStructure.jointsSymbol(:), jointValues(:)));
+
+    try
+        evalStructure.Ta = double(subs(evalStructure.Ta, evalStructure.jointsSymbol(:), jointValues(:)));
+    catch
+        warning('Ta is singular in this configuration');
+    end
 end

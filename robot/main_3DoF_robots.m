@@ -35,7 +35,13 @@ DH_table = [
 
 % to adjust the EE to match the robotics toolbox one we must rotate about
 % the y axis by pi/2 rad
-rotateEE = [  eul2rotm([0 pi/2 0],"ZYZ") [0; 0; 0]; [0 0 0 1] ];
+
+rotateEE_rotation = eul2rotm([0 pi/2 0],"ZYZ");
+% this step removes small float point representation errors
+rotateEE_rotation_mask = abs(rotateEE_rotation) > 1e-15;
+rotateEE_rotation = rotateEE_rotation .* rotateEE_rotation_mask;
+
+rotateEE = [ rotateEE_rotation [0; 0; 0]; [0 0 0 1] ];
 
 % converts DH rows to homogeneous transformations
 T_dh = DHToTransforms(DH_table);
@@ -242,9 +248,23 @@ myRobot.dynamics.G;
 
 %% Dynamic model in the operational space
 
+% We test the following J_a obtained via the T matrix against the one
+% obtained with the partial derivatives of the
+J_a = inv(myRobot.Ta) * myRobot.J;
+
+q_test = rand([3 100]) * 10;
+
+tot_error = 0;
+
+for i=1:size(q_test, 2)
+     tot_error = tot_error +  sum(abs(double(subs(myRobot.Ja, q, q_test(:, i)) - subs(J_a, q, q_test(:, i)))), "all");
+end
+
+fprintf('Analytica jacobian Error: %.4e\n', tot_error);
+
 % Ba = inv(myRobot.Ja * inv(myRobot.dynamics.B) * myRobot.Ja');
 % Ca_dx = Ba*Ja*inv(myRobot.dynamics.B)*myRobot.dynamics.C*dq - Ba*diff(myRobot.Ja)*dq;
-% ga = Ba*myRobot.Ja*inv(B)*myRobot.dynamics.G;
+% ga = Ba*myRobot.Ja*inv(myRobot.dynamics.B)*myRobot.dynamics.G;
 % ua_e = myRobot.Ta'*he;
 
 

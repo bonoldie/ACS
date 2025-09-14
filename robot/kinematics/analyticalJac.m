@@ -18,6 +18,8 @@ for i=1:roboticStructure.DOF
     Ja(6, i) = diff(psi, roboticStructure.jointsSymbol(i, 1));
 end 
 
+Ja = simplify(Ja);
+
 Ta = sym(eye(6));
 Ta(4:6,4:6) = [
     0 -sin(phi) cos(phi)*sin(theta);

@@ -8,19 +8,19 @@ xlabel('time (s)');
 
 subplot(412);
 title("pose(y)");
-l(3).Position = [ 0.89 0.95-0.25 0 0 ];
+l(3).Position = [ 0.89 0.95-0.255 0 0 ];
 ylabel('position (m)');
 xlabel('time (s)');
 
 subplot(413);
 title("pose(z)");
-l(2).Position = [ 0.89 0.95-0.25-0.25 0 0 ];
+l(2).Position = [ 0.89 0.95-0.255-0.255 0 0 ];
 ylabel('position (m)');
 xlabel('time (s)');
 
 subplot(414);
 title("External wrench");
-l(1).Position = [ 0.89 0.95-0.25-0.25-0.25 0 0 ];
+l(1).Position = [ 0.89 0.95-0.255-0.255-0.255 0 0 ];
 ylabel('force (N)');
 xlabel('time (s)');
 
